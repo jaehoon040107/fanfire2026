@@ -58,11 +58,15 @@ npm run typecheck
 
 ## 🔑 배포 시 실데이터 연동 (DEPLOY.md 참고)
 
-`mock → live` 전환은 **환경변수만 채우면** 끝납니다. 코드 수정 불필요.
+`mock → live` 전환은 **환경변수 + 스키마 실행**으로 끝납니다. 코드 수정 불필요.
+모든 DB 읽기/쓰기는 `src/lib/db.ts` 한 곳을 거치며, 키가 없으면 자동으로 mock 폴백합니다.
 
 1. `.env.local`(또는 Vercel 환경변수)에 키 입력
 2. `NEXT_PUBLIC_DATA_MODE=live` 설정
 3. Supabase SQL Editor 에 `supabase/schema.sql` 실행
+
+> live 모드에서 유저 생성·댓글·예측·반응·집계가 실제 Supabase 로 영속됩니다.
+> 트래픽 스파이크 전 권장하는 추가 보안(Turnstile·rate limit)은 DEPLOY.md 6번 참고.
 
 자세한 단계는 [DEPLOY.md](./DEPLOY.md) 참고.
 

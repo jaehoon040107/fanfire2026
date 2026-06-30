@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageSquare, Trophy, X } from 'lucide-react';
 import { useUI } from '@/store/useUI';
-import { getMatchById } from '@/data/matches';
 import { Flag } from './Flag';
 import { CommentFeed } from './CommentFeed';
 import { PredictionPanel } from './PredictionPanel';
@@ -25,9 +24,11 @@ type Tab = 'predict' | 'chat';
 export function MatchDetail() {
   const selectedId = useUI((s) => s.selectedMatchId);
   const close = useUI((s) => s.closeMatch);
+  const matches = useUI((s) => s.matches);
   const [tab, setTab] = useState<Tab>('predict');
 
-  const match = selectedId ? getMatchById(selectedId) : undefined;
+  // 단일 진실 소스(서버 fetch 결과)에서 조회 → 실 API match id 와 정합.
+  const match = selectedId ? matches.find((m) => m.id === selectedId) : undefined;
 
   return (
     <AnimatePresence>

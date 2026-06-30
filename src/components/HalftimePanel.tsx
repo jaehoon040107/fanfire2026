@@ -4,6 +4,7 @@ import { Timer } from 'lucide-react';
 import type { Match } from '@/types';
 import { HALFTIME_QUESTIONS } from '@/data/matches';
 import { useStore } from '@/store/useStore';
+import { saveHalftime } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { seededRandom } from '@/lib/utils';
 
@@ -45,9 +46,20 @@ export function HalftimePanel({ match }: { match: Match }) {
                     <button
                       key={opt}
                       disabled={!user}
-                      onClick={() =>
-                        setHalftime({ matchId: match.id, questionId: q.id, answer: opt })
-                      }
+                      onClick={() => {
+                        setHalftime({
+                          matchId: match.id,
+                          questionId: q.id,
+                          answer: opt,
+                        });
+                        if (user)
+                          saveHalftime({
+                            userId: user.id,
+                            matchId: match.id,
+                            questionId: q.id,
+                            answer: opt,
+                          });
+                      }}
                       className={cn(
                         'relative flex-1 overflow-hidden rounded-lg border px-3 py-2 text-sm font-medium transition-all disabled:opacity-50',
                         selected

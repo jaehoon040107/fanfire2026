@@ -6,6 +6,7 @@ import { Flame } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { COUNTRIES, countryName } from '@/lib/countries';
 import { detectCountry } from '@/lib/client-api';
+import { createUser } from '@/lib/db';
 import { Flag } from './Flag';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ export function OnboardingModal() {
   const [nickname, setNickname] = useState('');
   const [detecting, setDetecting] = useState(true);
   const [query, setQuery] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => setHydrated(true), []);
 
@@ -45,14 +47,13 @@ export function OnboardingModal() {
 
   const canSubmit = nickname.trim().length >= 2 && nickname.trim().length <= 16;
 
-  const submit = () => {
-    if (!canSubmit) return;
-    setUser({
-      id: `u-${Math.abs(hashCode(nickname + country + Date.now()))}`,
-      nickname: nickname.trim(),
-      countryCode: country,
-      createdAt: new Date().toISOString(),
-    });
+  const submit = async () => {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    // live 모드면 Supabase 가 발급한 uuid 를, 아니면 로컬 id 를 받는다.
+    const user = await createUser(nickname.trim(), country);
+    setUser(user);
+    setSubmitting(false);
   };
 
   return (
@@ -141,21 +142,17 @@ export function OnboardingModal() {
               </p>
             </div>
 
-            <button onClick={submit} disabled={!canSubmit} className="btn-fire w-full">
+            <button
+              onClick={submit}
+              disabled={!canSubmit || submitting}
+              className="btn-fire w-full"
+            >
               <Flame className="h-4 w-4" fill="currentColor" />
-              Enter the Fire
+              {submitting ? 'Lighting up…' : 'Enter the Fire'}
             </button>
           </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
-}
-
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  }
-  return h;
 }

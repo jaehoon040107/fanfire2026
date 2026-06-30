@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import type { Match } from '@/types';
+import { useUI } from '@/store/useUI';
 import { Header } from './Header';
 import { Hero } from './Hero';
 import { TournamentBracket } from './TournamentBracket';
@@ -12,6 +14,13 @@ import { ShareCardModal } from './ShareCardModal';
 import { Flame } from 'lucide-react';
 
 export function HomeClient({ matches }: { matches: Match[] }) {
+  const setMatches = useUI((s) => s.setMatches);
+
+  // 서버에서 받은 경기 목록을 전역 스토어에 등록 → 상세/집계가 동일 소스를 참조.
+  useEffect(() => {
+    setMatches(matches);
+  }, [matches, setMatches]);
+
   const liveCount = matches.filter(
     (m) => m.status === 'live' || m.status === 'halftime',
   ).length;

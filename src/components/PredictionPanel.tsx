@@ -8,6 +8,7 @@ import { useStore } from '@/store/useStore';
 import { useUI } from '@/store/useUI';
 import { Flag } from './Flag';
 import { predictionRatio, pickRarity } from '@/data/insights';
+import { savePrediction } from '@/lib/db';
 import { cn } from '@/lib/utils';
 
 // 승부예측: 승패(필수) + 스코어(선택). 마감 = 경기 시작 전(scheduled).
@@ -36,6 +37,14 @@ export function PredictionPanel({ match }: { match: Match }) {
       predictedWinner: winner,
       predictedScore: useScore ? { home, away } : null,
       createdAt: new Date().toISOString(),
+    });
+    // live 모드: Supabase 에 저장(글로벌 예측 비율·정확도 집계 소스)
+    savePrediction({
+      userId: user.id,
+      matchId: match.id,
+      countryCode: user.countryCode,
+      predictedWinner: winner,
+      predictedScore: useScore ? { home, away } : null,
     });
   };
 

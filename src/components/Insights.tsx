@@ -1,21 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, TrendingUp, Users } from 'lucide-react';
-import type { Match } from '@/types';
+import type { CountryAccuracy, Match, PredictionRatio } from '@/types';
 import { Flag } from './Flag';
 import { countryName } from '@/lib/countries';
+import { useUI } from '@/store/useUI';
 import {
   countryAccuracyRanking,
   countryHeat,
   predictionRatio,
   sentimentShift,
 } from '@/data/insights';
+import {
+  fetchCountryAccuracy,
+  fetchCountryHeat,
+  fetchPredictionRatio,
+} from '@/lib/db';
 import { cn } from '@/lib/utils';
 
 // ── 글로벌 예측 비율 ──────────────────────────────────────
 export function GlobalPredictionRatio({ match }: { match: Match }) {
-  const r = predictionRatio(match.id);
+  // mock 을 즉시 표시 → live 모드에서 실데이터 있으면 교체.
+  const [r, setR] = useState<PredictionRatio>(() => predictionRatio(match.id));
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPredictionRatio(match.id, match.homeTeam.code, match.awayTeam.code).then(
+      (live) => {
+        if (!cancelled && live) setR(live);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [match.id, match.homeTeam.code, match.awayTeam.code]);
+
   const top = Math.max(r.home, r.draw, r.away);
   const leader =
     top === r.home ? match.homeTeam.name : top === r.away ? match.awayTeam.name : 'a draw';
@@ -46,7 +67,18 @@ export function GlobalPredictionRatio({ match }: { match: Match }) {
 
 // ── 국가별 온도계 ─────────────────────────────────────────
 export function CountryHeatmap({ match }: { match: Match }) {
-  const heat = countryHeat(match.id);
+  const [heat, setHeat] = useState(() => countryHeat(match.id));
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCountryHeat(match.id).then((live) => {
+      if (!cancelled && live && live.length > 0) setHeat(live);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [match.id]);
+
   return (
     <div className="card p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -115,7 +147,34 @@ export function SentimentShift({ match }: { match: Match }) {
 
 // ── 국가별 예측 정확도 랭킹 (국가 자존심 자극) ────────────
 export function AccuracyRanking({ limit = 8 }: { limit?: number }) {
-  const ranking = countryAccuracyRanking().slice(0, limit);
+  const matches = useUI((s) => s.matches);
+  const [ranking, setRanking] = useState<CountryAccuracy[]>(() =>
+    countryAccuracyRanking(),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    // 끝난 경기의 실제 승자 맵 구성 → DB 예측과 대조.
+    const actual: Record<string, string> = {};
+    for (const m of matches) {
+      if (m.status !== 'finished' || m.homeScore == null || m.awayScore == null)
+        continue;
+      actual[m.id] =
+        m.homeScore > m.awayScore
+          ? m.homeTeam.code
+          : m.awayScore > m.homeScore
+            ? m.awayTeam.code
+            : 'draw';
+    }
+    fetchCountryAccuracy(actual).then((live) => {
+      if (!cancelled && live && live.length > 0) setRanking(live);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [matches]);
+
+  const shown = ranking.slice(0, limit);
   return (
     <div className="card p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -124,7 +183,7 @@ export function AccuracyRanking({ limit = 8 }: { limit?: number }) {
         <span className="ml-auto text-[11px] text-ink-faint">best predictors</span>
       </div>
       <div className="space-y-1.5">
-        {ranking.map((c) => (
+        {shown.map((c) => (
           <div
             key={c.countryCode}
             className={cn(
