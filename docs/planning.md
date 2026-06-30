@@ -109,7 +109,7 @@ country_heat: match_id, country_code, heat_score
 
 ## 진행 단계
 - [x] 기획
-- [ ] 디자인
-- [ ] 프로그래밍
-- [ ] 배포
+- [x] 디자인 (화이트 + 파이어 그라디언트 / 반응형 / 컴포넌트 구조)
+- [x] 프로그래밍 (Next.js 14 풀 구현, mock 모드로 전 기능 동작, 빌드 통과)
+- [ ] 배포 (키 연동 + Vercel — DEPLOY.md 참고)
 - [ ] 마케팅
